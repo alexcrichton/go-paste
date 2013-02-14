@@ -37,4 +37,3 @@ func newStatic(logical, path string) (*staticAsset, error) {
 
   return asset, nil
 }
-
