@@ -1,10 +1,10 @@
 package paste
 
-import "time"
-import "os"
 import "crypto/md5"
-import "io"
 import "encoding/hex"
+import "io"
+import "os"
+import "time"
 
 type staticAsset struct {
   digest string

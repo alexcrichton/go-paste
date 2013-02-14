@@ -1,11 +1,10 @@
 package paste
 
-// import "github.com/suapapa/go_sass"
 import "net/http"
 import "path"
+import "path/filepath"
 import "regexp"
 import "sync"
-import "path/filepath"
 
 var hashRegex = regexp.MustCompile(`(.*)-([a-f0-9]{32})(\.\w+)`)
 
@@ -26,7 +25,7 @@ func FileServer(path string) *Server {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-  dir, file := path.Split(path.Clean("/" + r.URL.Path))
+  dir, file := path.Split(r.URL.Path)
   file, digest := findDigest(file)
   asset, err := s.asset(path.Join(dir, file))
   if err != nil || (digest != "" && digest != asset.Digest()) {
@@ -70,12 +69,13 @@ func findDigest(file string) (string, string) {
   return matches[1] + matches[3], matches[2]
 }
 
-func (s *Server) asset(upath string) (Asset, error) {
+func (s *Server) asset(logical string) (Asset, error) {
+  logical = path.Clean("/" + logical)
   s.Lock()
-  ret, ok := s.assets[upath]
+  ret, ok := s.assets[logical]
   if !ok {
     ret = &assetMeta{}
-    s.assets[upath] = ret
+    s.assets[logical] = ret
   }
   ret.Lock()
   defer ret.Unlock()
@@ -83,7 +83,7 @@ func (s *Server) asset(upath string) (Asset, error) {
   if ret.err != nil {
     return nil, ret.err
   } else if ret.Asset == nil || ret.Stale() {
-    a, err := s.buildAsset(upath)
+    a, err := s.buildAsset(logical)
     if err == nil {
       ret.Asset = a
     } else {
@@ -95,6 +95,19 @@ func (s *Server) asset(upath string) (Asset, error) {
   return ret, nil
 }
 
-func (s *Server) buildAsset(upath string) (Asset, error) {
-  return newStatic(upath, filepath.Join(s.fsRoot, upath))
+func (s *Server) buildAsset(logical string) (Asset, error) {
+  return newStatic(logical, filepath.Join(s.fsRoot, logical))
+}
+
+func (s *Server) AssetPath(logical string, digest bool) (string, error) {
+  asset, err := s.asset(logical)
+  if err != nil {
+    return "", err
+  }
+  if digest {
+    dir, file := path.Split(asset.LogicalName())
+    ext := path.Ext(file)
+    return dir + file[:len(file) - len(ext)] + "-" + asset.Digest() + ext, nil
+  }
+  return asset.LogicalName(), nil
 }

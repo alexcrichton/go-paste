@@ -1,12 +1,12 @@
 package paste
 
-import "strings"
 import "io/ioutil"
 import "net/http"
 import "net/http/httptest"
 import "os"
-import "testing"
 import "path/filepath"
+import "strings"
+import "testing"
 import "time"
 
 func check(e error) {
@@ -39,12 +39,17 @@ func TestFindDigest(t *testing.T) {
   testEq(t, b, "")
 }
 
-func stub() (*httptest.Server, string) {
+func stubServer() (*Server, string) {
   cwd, err := os.Getwd()
   check(err)
   tmpdir, err := ioutil.TempDir(cwd, "paste")
   check(err)
-  return httptest.NewServer(FileServer(tmpdir)), tmpdir
+  return FileServer(tmpdir), tmpdir
+}
+
+func stub() (*httptest.Server, string) {
+  srv, dir := stubServer()
+  return httptest.NewServer(srv), dir
 }
 
 func stubFile(wd, file, contents string) {
@@ -122,7 +127,6 @@ func TestGetExistNotModified(t *testing.T) {
   srv, wd := stub()
   defer srv.Close()
   defer os.RemoveAll(wd)
-
   stubFile(wd, "foo.js", "asdf")
 
   req, err := http.NewRequest("GET", srv.URL + "/foo.js", nil)
@@ -143,4 +147,30 @@ func TestGetExistNotModified(t *testing.T) {
   if resp.StatusCode != http.StatusNotModified {
     t.Errorf("expected 304 return, got %d", resp.StatusCode)
   }
+}
+
+func TestAssetPaths(t *testing.T) {
+  srv, wd := stubServer()
+  defer os.RemoveAll(wd)
+  stubFile(wd, "foo.js", "asdf")
+
+  /* nonexistent file */
+  _, err := srv.AssetPath("asdf", false)
+  if err == nil {
+    t.Errorf("expected an error")
+  }
+
+  /* non-digested file */
+  ret, err := srv.AssetPath("foo.js", false)
+  if err != nil {
+    t.Errorf("got error: %s", err.Error())
+  }
+  testEq(t, ret, "/foo.js")
+
+  /* digested file, yum */
+  ret, err = srv.AssetPath("foo.js", true)
+  if err != nil {
+    t.Errorf("got error: %s", err.Error())
+  }
+  testEq(t, ret, "/foo-912ec803b2ce49e4a541068d495ab570.js")
 }
