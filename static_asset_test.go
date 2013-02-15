@@ -6,14 +6,15 @@ import "io/ioutil"
 import "time"
 
 func TestStaticStale(t *testing.T) {
-  f, err := ioutil.TempFile(os.TempDir(), "paste")
+  srv, wd := stubServer(t)
+  f, err := ioutil.TempFile(wd, "paste")
   check(t, err)
   name := f.Name()
   defer os.Remove(name)
   f.Write([]byte("foo"))
   f.Close()
 
-  asset, err := newStatic("bar", name)
+  asset, err := newStatic(srv, "bar", name)
   if err != nil {
     t.Errorf("ran into error: %s", err.Error())
   }

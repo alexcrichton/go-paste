@@ -8,6 +8,7 @@ type staticAsset struct {
   pathname string
   mtime time.Time
   logical string
+  srv *Server
 }
 
 func (s *staticAsset) Digest() string { return s.digest }
@@ -26,7 +27,7 @@ func (s *staticAsset) Stale() bool {
   }
 
   /* Same contents? not stale */
-  if hexdigest(f) == s.digest {
+  if hexdigest(s.srv, f) == s.digest {
     return false
   }
 
@@ -34,8 +35,8 @@ func (s *staticAsset) Stale() bool {
   return true
 }
 
-func newStatic(logical, path string) (*staticAsset, error) {
-  asset := &staticAsset { pathname: path, logical: logical }
+func newStatic(s *Server, logical, path string) (*staticAsset, error) {
+  asset := &staticAsset { pathname: path, logical: logical, srv: s }
   f, stat, err := openStat(path)
   if err != nil {
     return nil, err
@@ -44,7 +45,7 @@ func newStatic(logical, path string) (*staticAsset, error) {
   }
 
   asset.mtime = stat.ModTime()
-  asset.digest = hexdigest(f)
+  asset.digest = hexdigest(s, f)
 
   return asset, nil
 }

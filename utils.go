@@ -5,14 +5,18 @@ import "encoding/hex"
 import "io"
 import "os"
 
-func hexdigest(f io.Reader) string {
+func hexdigest(srv *Server, f io.Reader) string {
   hash := md5.New()
+  hash.Write([]byte(Version))
+  hash.Write([]byte(srv.Version))
   io.Copy(hash, f)
   return hex.EncodeToString(hash.Sum(nil))
 }
 
-func hexdigestString(s string) string {
+func hexdigestString(srv *Server, s string) string {
   hash := md5.New()
+  hash.Write([]byte(Version))
+  hash.Write([]byte(srv.Version))
   hash.Write([]byte(s))
   return hex.EncodeToString(hash.Sum(nil))
 }

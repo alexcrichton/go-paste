@@ -10,6 +10,7 @@ import "sync"
 import "time"
 
 var hashRegex = regexp.MustCompile(`(.*)-([a-f0-9]{32})(\.\w+)`)
+var Version = "0.0.0"
 
 type assetMeta struct {
   err     error
@@ -22,6 +23,7 @@ type Server struct {
   tmpdir string
   assets map[string]*assetMeta
   sync.Mutex
+  Version string
 }
 
 type Processor interface {
@@ -148,7 +150,7 @@ func (s *Server) buildAsset(logical string) (Asset, error) {
   if ok {
     return newProcessed(s, logical, pathname)
   }
-  return newStatic(logical, pathname)
+  return newStatic(s, logical, pathname)
 }
 
 func (s *Server) resolve(logical string) (string, error) {

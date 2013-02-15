@@ -37,7 +37,7 @@ func (s *processedAsset) Stale() bool {
 }
 
 func newProcessed(s *Server, logical, path string) (Asset, error) {
-  static, err := newStatic(logical, path)
+  static, err := newStatic(s, logical, path)
   if err != nil {
     return nil, err
   }
@@ -63,7 +63,7 @@ func newProcessed(s *Server, logical, path string) (Asset, error) {
       asset.mtime = d.ModTime()
     }
   }
-  asset.digest = hexdigestString(digest)
+  asset.digest = hexdigestString(s, digest)
 
   compiled := filepath.Join(filepath.Join(s.fsRoot, s.tmpdir), asset.digest)
   os.MkdirAll(filepath.Dir(compiled), 0755)
