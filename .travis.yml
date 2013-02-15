@@ -1,1 +1,7 @@
 language: go
+before_script:
+  - git clone git://github.com/hcatlin/libsass
+  - cd libsass
+  - ./configure
+  - make install
+  - cd ..
