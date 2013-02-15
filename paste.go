@@ -1,5 +1,6 @@
 package paste
 
+import "mime"
 import "net/http"
 import "os"
 import "path"
@@ -79,6 +80,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     headers.Set("Expires", endoftime.Format(http.TimeFormat))
   } else {
     headers.Set("Cache-Control", "public, must-revalidate")
+  }
+  ctype := mime.TypeByExtension(path.Ext(file))
+  if ctype != "" {
+    headers.Set("Content-Type", ctype)
   }
   http.ServeFile(w, r, asset.Pathname())
 }

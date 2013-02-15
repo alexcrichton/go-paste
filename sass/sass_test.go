@@ -1,11 +1,12 @@
 package sass
 
 import "github.com/alexcrichton/go-paste"
+import "io/ioutil"
 import "net/http"
 import "net/http/httptest"
-import "io/ioutil"
 import "os"
 import "path/filepath"
+import "strings"
 import "testing"
 
 func check(t *testing.T, e error) {
@@ -48,5 +49,8 @@ func TestSass(t *testing.T) {
   check(t, err)
   if string(s) != compressed {
     t.Errorf("wrong contents:\n%s", string(s))
+  }
+  if !strings.Contains(resp.Header.Get("Content-Type"), "text/css") {
+    t.Errorf("wrong content type: %s", resp.Header.Get("Content-Type"))
   }
 }

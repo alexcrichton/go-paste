@@ -41,4 +41,8 @@ func TestJsmin(t *testing.T) {
   if !strings.Contains(string(s), "0x1;var") {
     t.Errorf("wrong contents:\n%s", string(s))
   }
+  ctype := resp.Header.Get("Content-Type")
+  if !strings.Contains(ctype, "application/javascript") {
+    t.Errorf("wrong content type: %s", ctype)
+  }
 }
