@@ -5,9 +5,9 @@ import "os"
 import "io/ioutil"
 import "time"
 
-func TestStale(t *testing.T) {
+func TestStaticStale(t *testing.T) {
   f, err := ioutil.TempFile(os.TempDir(), "paste")
-  check(err)
+  check(t, err)
   name := f.Name()
   defer os.Remove(name)
   f.Write([]byte("foo"))
@@ -21,12 +21,12 @@ func TestStale(t *testing.T) {
     t.Errorf("shouldn't be stale when just created")
   }
   past := time.Now().Add(-5 * time.Second)
-  check(os.Chtimes(name, past, past))
+  check(t, os.Chtimes(name, past, past))
   if asset.Stale() {
     t.Errorf("shouldn't be stale with old contents")
   }
 
-  check(ioutil.WriteFile(name, []byte("bar"), 0644))
+  check(t, ioutil.WriteFile(name, []byte("bar"), 0644))
   if !asset.Stale() {
     t.Errorf("should be stale now with new contents")
   }

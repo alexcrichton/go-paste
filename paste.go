@@ -16,6 +16,7 @@ type assetMeta struct {
 
 type Server struct {
   fsRoot string
+  tmpdir string
   assets map[string]*assetMeta
   sync.Mutex
 }
@@ -38,7 +39,8 @@ func RegisterProcessor(p Processor, ext string) {
 }
 
 func FileServer(path string) *Server {
-  return &Server{ fsRoot: path, assets: make(map[string]*assetMeta) }
+  return &Server{ fsRoot: path, assets: make(map[string]*assetMeta),
+                  tmpdir: "tmp" }
 }
 
 func (p ProcessorFunc) Process(infile, outfile string) error {
@@ -119,6 +121,10 @@ func (s *Server) asset(logical string) (Asset, error) {
 }
 
 func (s *Server) buildAsset(logical string) (Asset, error) {
+  ext := path.Ext(logical)
+  if ext == ".js" {
+    return newProcessed(s, logical, filepath.Join(s.fsRoot, logical))
+  }
   return newStatic(logical, filepath.Join(s.fsRoot, logical))
 }
 
