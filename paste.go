@@ -5,6 +5,7 @@ import "path"
 import "path/filepath"
 import "regexp"
 import "sync"
+import "time"
 
 var hashRegex = regexp.MustCompile(`(.*)-([a-f0-9]{32})(\.\w+)`)
 
@@ -62,7 +63,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
   headers := w.Header()
   if digest != "" {
+    endoftime := time.Now().Add(31536000 * time.Second)
     headers.Set("Cache-Control", "public, max-age=31536000")
+    headers.Set("Expires", endoftime.Format(http.TimeFormat))
   } else {
     headers.Set("Cache-Control", "public, must-revalidate")
   }
