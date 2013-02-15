@@ -21,13 +21,14 @@ func TestStaticStale(t *testing.T) {
   if asset.Stale() {
     t.Errorf("shouldn't be stale when just created")
   }
-  past := time.Now().Add(-5 * time.Second)
-  check(t, os.Chtimes(name, past, past))
+  future := time.Now().Add(5 * time.Second)
+  check(t, os.Chtimes(name, future, future))
   if asset.Stale() {
     t.Errorf("shouldn't be stale with old contents")
   }
 
   check(t, ioutil.WriteFile(name, []byte("bar"), 0644))
+  check(t, os.Chtimes(name, future, future))
   if !asset.Stale() {
     t.Errorf("should be stale now with new contents")
   }

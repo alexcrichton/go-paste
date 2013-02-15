@@ -20,9 +20,10 @@ func (s *staticAsset) Stale() bool {
   /* If the file doesn't exist, we're definitely stale */
   f, stat, err := openStat(s.pathname)
   if err != nil { return true }
+  defer f.Close()
 
   /* If the file hasn't been modified, it's not stale */
-  if stat.ModTime().Before(s.mtime) {
+  if stat.ModTime().Before(s.mtime) || stat.ModTime().Equal(s.mtime) {
     return false
   }
 

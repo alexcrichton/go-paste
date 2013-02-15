@@ -30,13 +30,14 @@ func TestProcessedSingleFile(t *testing.T) {
   if asset.Stale() {
     t.Errorf("shouldn't be stale when just created")
   }
-  past := time.Now().Add(-5 * time.Second)
-  check(t, os.Chtimes(file, past, past))
+  future := time.Now().Add(5 * time.Second)
+  check(t, os.Chtimes(file, future, future))
   if asset.Stale() {
     t.Errorf("shouldn't be stale with old contents")
   }
 
   check(t, ioutil.WriteFile(file, []byte("foo"), 0644))
+  check(t, os.Chtimes(file, future, future))
   if !asset.Stale() {
     t.Errorf("should be stale now with new contents")
   }
@@ -61,13 +62,14 @@ func TestProcessedConcatenates(t *testing.T) {
   if asset.Stale() {
     t.Errorf("shouldn't be stale")
   }
-  past := time.Now().Add(-5 * time.Second)
-  check(t, os.Chtimes(filepath.Join(wd, "bar.js"), past, past))
+  future := time.Now().Add(5 * time.Second)
+  check(t, os.Chtimes(filepath.Join(wd, "bar.js"), future, future))
   if asset.Stale() {
     t.Errorf("shouldn't be stale with same contents")
   }
 
   check(t, ioutil.WriteFile(filepath.Join(wd, "baz.js"), []byte("baz2"), 0644))
+  check(t, os.Chtimes(filepath.Join(wd, "baz.js"), future, future))
   if !asset.Stale() {
     t.Errorf("should be stale now with new contents")
   }
