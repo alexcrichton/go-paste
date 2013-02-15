@@ -1,8 +1,6 @@
 package paste
 
-import "crypto/md5"
-import "encoding/hex"
-import "io"
+import "errors"
 import "os"
 import "time"
 
@@ -32,9 +30,7 @@ func (s *staticAsset) Stale() bool {
   }
 
   /* Same contents? not stale */
-  hash := md5.New()
-  _, err = io.Copy(hash, f)
-  if hex.EncodeToString(hash.Sum(nil)) == s.digest {
+  if hexdigest(f) == s.digest {
     return false
   }
 
@@ -50,12 +46,12 @@ func newStatic(logical, path string) (*staticAsset, error) {
 
   stat, err := f.Stat()
   if err != nil { return nil, err }
+  if stat.IsDir() {
+    return nil, errors.New("cannot serve a directory")
+  }
   asset.mtime = stat.ModTime()
 
-  hash := md5.New()
-  _, err = io.Copy(hash, f)
-  if err != nil { return nil, err }
-  asset.digest = hex.EncodeToString(hash.Sum(nil))
+  asset.digest = hexdigest(f)
 
   return asset, nil
 }

@@ -6,7 +6,6 @@ import "io/ioutil"
 import "time"
 
 func TestStale(t *testing.T) {
-  println("yay")
   f, err := ioutil.TempFile(os.TempDir(), "paste")
   check(err)
   name := f.Name()
