@@ -6,6 +6,7 @@ import "os"
 import "time"
 import "path/filepath"
 import "strings"
+import "regexp"
 
 type processedAsset struct {
   static *staticAsset
@@ -15,6 +16,8 @@ type processedAsset struct {
   mtime    time.Time
   pathname string
 }
+
+var jsRequires = regexp.MustCompile(`^//=\s*require\s+(\S+)`)
 
 func (s *processedAsset) Digest() string      { return s.digest }
 func (s *processedAsset) Pathname() string    { return s.pathname }
@@ -38,7 +41,7 @@ func newProcessed(s *Server, logical, path string) (Asset, error) {
   }
 
   asset := &processedAsset{static: static, dependencies: make([]Asset, 0)}
-  paths, err := asset.requiredPaths()
+  paths, err := asset.requiredPaths(jsRequires)
   if err != nil {
     return nil, err
   }
@@ -69,15 +72,16 @@ func newProcessed(s *Server, logical, path string) (Asset, error) {
   defer file.Close()
   asset.pathname = file.Name()
 
-  copyFile(file, asset.static.pathname)
   for _, dep := range asset.dependencies {
     copyFile(file, dep.Pathname())
+    file.Write([]byte{'\n'})
   }
+  copyFile(file, asset.static.pathname)
 
   return asset, nil
 }
 
-func (s *processedAsset) requiredPaths() ([]string, error) {
+func (s *processedAsset) requiredPaths(rx *regexp.Regexp) ([]string, error) {
   f, err := os.Open(s.static.pathname)
   if err != nil {
     return nil, err
@@ -93,8 +97,9 @@ func (s *processedAsset) requiredPaths() ([]string, error) {
       return nil, err
     }
     if strings.TrimSpace(s) != "" && !strings.HasPrefix(s, "//") { break }
-    if !strings.HasPrefix(s, "//= require") {
-      paths = append(paths, s[11:])
+    matches := rx.FindStringSubmatch(s)
+    if len(matches) > 1 {
+      paths = append(paths, matches[1])
     }
   }
   return paths, nil
