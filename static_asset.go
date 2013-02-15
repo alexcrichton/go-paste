@@ -1,7 +1,6 @@
 package paste
 
 import "errors"
-import "os"
 import "time"
 
 type staticAsset struct {
@@ -18,10 +17,7 @@ func (s *staticAsset) LogicalName() string { return s.logical }
 
 func (s *staticAsset) Stale() bool {
   /* If the file doesn't exist, we're definitely stale */
-  f, err := os.Open(s.pathname)
-  if err != nil { return true }
-  defer f.Close()
-  stat, err := f.Stat()
+  f, stat, err := openStat(s.pathname)
   if err != nil { return true }
 
   /* If the file hasn't been modified, it's not stale */
@@ -40,17 +36,14 @@ func (s *staticAsset) Stale() bool {
 
 func newStatic(logical, path string) (*staticAsset, error) {
   asset := &staticAsset { pathname: path, logical: logical }
-  f, err := os.Open(path)
-  if err != nil { return nil, err }
-  defer f.Close()
-
-  stat, err := f.Stat()
-  if err != nil { return nil, err }
-  if stat.IsDir() {
+  f, stat, err := openStat(path)
+  if err != nil {
+    return nil, err
+  } else if stat.IsDir() {
     return nil, errors.New("cannot serve a directory")
   }
-  asset.mtime = stat.ModTime()
 
+  asset.mtime = stat.ModTime()
   asset.digest = hexdigest(f)
 
   return asset, nil
