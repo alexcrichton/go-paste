@@ -24,7 +24,7 @@ func (s *staticAsset) Stale() bool {
   stat, err := f.Stat()
   if err != nil { return true }
 
-  /* If the file hasn't been modified since we last looked at it, it's stale */
+  /* If the file hasn't been modified, it's not stale */
   if stat.ModTime().Before(s.mtime) {
     return false
   }
