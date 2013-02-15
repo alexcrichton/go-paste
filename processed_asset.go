@@ -3,10 +3,11 @@ package paste
 import "bufio"
 import "io"
 import "os"
-import "time"
+import "path"
 import "path/filepath"
-import "strings"
 import "regexp"
+import "strings"
+import "time"
 
 type processedAsset struct {
   static *staticAsset
@@ -90,16 +91,20 @@ func (s *processedAsset) requiredPaths(rx *regexp.Regexp) ([]string, error) {
   buf := bufio.NewReader(f)
   paths := make([]string, 0)
   for {
-    s, err := buf.ReadString('\n')
+    line, err := buf.ReadString('\n')
     if err == io.EOF {
       break
     } else if err != nil {
       return nil, err
     }
-    if strings.TrimSpace(s) != "" && !strings.HasPrefix(s, "//") { break }
-    matches := rx.FindStringSubmatch(s)
+    if strings.TrimSpace(line) != "" && !strings.HasPrefix(line, "//") { break }
+    matches := rx.FindStringSubmatch(line)
     if len(matches) > 1 {
-      paths = append(paths, matches[1])
+      match := matches[1]
+      if path.Ext(match) == "" {
+        match += path.Ext(s.static.logical)
+      }
+      paths = append(paths, match)
     }
   }
   return paths, nil

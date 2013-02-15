@@ -38,7 +38,7 @@ func TestProcessedSingleFile(t *testing.T) {
 
 func TestProcessedConcatenates(t *testing.T) {
   srv, wd := stubServer(t)
-  stubFile(t, wd, "foo.js", "//= require bar.js\nfoo")
+  stubFile(t, wd, "foo.js", "//= require bar\nfoo")
   stubFile(t, wd, "bar.js", "//= require baz.js\nbar")
   stubFile(t, wd, "baz.js", "baz")
   file := filepath.Join(wd, "foo.js")
@@ -49,7 +49,7 @@ func TestProcessedConcatenates(t *testing.T) {
   }
   bits, err := ioutil.ReadFile(asset.Pathname())
   check(t, err)
-  if string(bits) != "baz\n//= require baz.js\nbar\n//= require bar.js\nfoo" {
+  if string(bits) != "baz\n//= require baz.js\nbar\n//= require bar\nfoo" {
     t.Errorf("wrong contents:\n%s", string(bits))
   }
   if asset.Stale() {
