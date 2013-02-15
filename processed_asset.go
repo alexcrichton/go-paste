@@ -2,6 +2,7 @@ package paste
 
 import "bufio"
 import "io"
+import "io/ioutil"
 import "os"
 import "path"
 import "path/filepath"
@@ -70,7 +71,6 @@ func newProcessed(s *Server, logical, path string) (Asset, error) {
   if err != nil {
     return nil, err
   }
-  defer file.Close()
   asset.pathname = file.Name()
 
   for _, dep := range asset.dependencies {
@@ -78,6 +78,23 @@ func newProcessed(s *Server, logical, path string) (Asset, error) {
     file.Write([]byte{'\n'})
   }
   copyFile(file, asset.static.pathname)
+  file.Close()
+
+  arr, ok := processors[filepath.Ext(asset.static.logical)]
+  if ok {
+    tmpdir, err := ioutil.TempDir("", "paste")
+    defer os.RemoveAll(tmpdir)
+    if err != nil {
+      return nil, err
+    }
+    for _, p := range arr {
+      err = p.Process(asset.Pathname(), filepath.Join(tmpdir, "foo"))
+      os.Rename(filepath.Join(tmpdir, "foo"), asset.Pathname())
+      if err != nil {
+        return nil, err
+      }
+    }
+  }
 
   return asset, nil
 }
