@@ -30,14 +30,23 @@ func stubFile(t *testing.T, wd, file, contents string) {
 func TestSass(t *testing.T) {
   srv, wd := stubServer(t)
   stubFile(t, wd, "foo.css", "#foo {\nwidth: 100px;\n}")
+  stubFile(t, wd, "bar.scss", "#foo {\nwidth: 100px;\n}")
+  compressed := "#foo{width:100px;}\n"
 
   resp, err := http.Get(srv.URL + "/foo.css")
   check(t, err)
-
-  /* Should at least remove the newline... */
   s, err := ioutil.ReadAll(resp.Body)
   check(t, err)
-  if string(s) != "#foo{width:100px;}\n" {
+  if string(s) != compressed {
+    t.Errorf("wrong contents:\n%s", string(s))
+  }
+
+  /* Be sure that lookup of 'bar.css' finds the 'bar.scss' file */
+  resp, err = http.Get(srv.URL + "/bar.css")
+  check(t, err)
+  s, err = ioutil.ReadAll(resp.Body)
+  check(t, err)
+  if string(s) != compressed {
     t.Errorf("wrong contents:\n%s", string(s))
   }
 }

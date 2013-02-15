@@ -16,6 +16,7 @@ func init() {
   c.SourceComments = true
 
   paste.RegisterProcessor(c, ".css")
+  paste.RegisterAlias(".css", ".scss")
 }
 
 func (c *Compiler) Process(infile, outfile string) error {

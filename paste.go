@@ -1,6 +1,7 @@
 package paste
 
 import "net/http"
+import "os"
 import "path"
 import "path/filepath"
 import "regexp"
@@ -29,6 +30,7 @@ type Processor interface {
 type ProcessorFunc func(infile, outfile string) error
 
 var processors = make(map[string][]Processor)
+var aliases = make(map[string][]string)
 
 func RegisterProcessor(p Processor, ext string) {
   prev, ok := processors[ext]
@@ -37,6 +39,15 @@ func RegisterProcessor(p Processor, ext string) {
   }
   prev = append(prev, p)
   processors[ext] = prev
+}
+
+func RegisterAlias(extension, alias string) {
+  prev, ok := aliases[extension]
+  if !ok {
+    prev = make([]string, 0)
+  }
+  prev = append(prev, alias)
+  aliases[extension] = prev
 }
 
 func FileServer(path string) *Server {
@@ -124,11 +135,35 @@ func (s *Server) asset(logical string) (Asset, error) {
 }
 
 func (s *Server) buildAsset(logical string) (Asset, error) {
+  pathname, err := s.resolve(logical)
+  if err != nil {
+    return nil, err
+  }
   _, ok := processors[path.Ext(logical)]
   if ok {
-    return newProcessed(s, logical, filepath.Join(s.fsRoot, logical))
+    return newProcessed(s, logical, pathname)
   }
-  return newStatic(logical, filepath.Join(s.fsRoot, logical))
+  return newStatic(logical, pathname)
+}
+
+func (s *Server) resolve(logical string) (string, error) {
+  try := filepath.Join(s.fsRoot, logical)
+  _, err := os.Stat(try)
+  if err == nil {
+    return try, nil
+  }
+  ext := filepath.Ext(logical)
+  candidates, ok := aliases[ext]
+  if ok {
+    for _, cand := range candidates {
+      try = filepath.Join(s.fsRoot, logical[:len(logical) - len(ext)] + cand)
+      _, err = os.Stat(try)
+      if err == nil {
+        return try, nil
+      }
+    }
+  }
+  return "", err
 }
 
 func (s *Server) AssetPath(logical string, digest bool) (string, error) {
