@@ -6,6 +6,12 @@ import "io/ioutil"
 import "time"
 import "path/filepath"
 
+func init() {
+  RegisterProcessor(ProcessorFunc(func(infile, outfile string) error {
+    return nil
+  }), ".js")
+}
+
 func TestProcessedSingleFile(t *testing.T) {
   srv, wd := stubServer(t)
   stubFile(t, wd, "foo.js", "bar")

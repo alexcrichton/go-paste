@@ -124,8 +124,8 @@ func (s *Server) asset(logical string) (Asset, error) {
 }
 
 func (s *Server) buildAsset(logical string) (Asset, error) {
-  ext := path.Ext(logical)
-  if ext == ".js" {
+  _, ok := processors[path.Ext(logical)]
+  if ok {
     return newProcessed(s, logical, filepath.Join(s.fsRoot, logical))
   }
   return newStatic(logical, filepath.Join(s.fsRoot, logical))
