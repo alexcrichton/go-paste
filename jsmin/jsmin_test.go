@@ -1,4 +1,4 @@
-package process
+package jsmin
 
 import "github.com/alexcrichton/go-paste"
 import "net/http"

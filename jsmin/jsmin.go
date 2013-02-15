@@ -1,4 +1,4 @@
-package process
+package jsmin
 
 import "bitbucket.org/maxhauser/jsmin"
 import "github.com/alexcrichton/go-paste"
