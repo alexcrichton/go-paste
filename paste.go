@@ -20,8 +20,29 @@ type Server struct {
   sync.Mutex
 }
 
+type Processor interface {
+  Process(infile, outfile string) error
+}
+
+type ProcessorFunc func(infile, outfile string) error
+
+var processors = make(map[string][]Processor)
+
+func RegisterProcessor(p Processor, ext string) {
+  prev, ok := processors[ext]
+  if !ok {
+    prev = make([]Processor, 0)
+  }
+  prev = append(prev, p)
+  processors[ext] = prev
+}
+
 func FileServer(path string) *Server {
   return &Server{ fsRoot: path, assets: make(map[string]*assetMeta) }
+}
+
+func (p ProcessorFunc) Process(infile, outfile string) error {
+  return p(infile, outfile)
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
