@@ -108,7 +108,9 @@ func (s *Server) asset(logical string) (Asset, error) {
     if err == nil {
       ret.Asset = a
     } else {
-      /* TODO: remove from 'assets' map */
+      s.Lock()
+      delete(s.assets, logical)
+      s.Unlock()
       ret.err = err
       return nil, err
     }
