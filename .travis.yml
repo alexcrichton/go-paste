@@ -1,7 +1,4 @@
 language: go
 before_install:
-  - git clone git://github.com/hcatlin/libsass
-  - cd libsass
-  - ./configure
-  - sudo make install
-  - cd ..
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq libsass
