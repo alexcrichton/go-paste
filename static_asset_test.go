@@ -7,6 +7,7 @@ import "time"
 
 func TestStaticStale(t *testing.T) {
   srv, wd := stubServer(t)
+  defer os.RemoveAll(wd)
   f, err := ioutil.TempFile(wd, "paste")
   check(t, err)
   name := f.Name()

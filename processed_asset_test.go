@@ -14,6 +14,7 @@ func init() {
 
 func TestProcessedSingleFile(t *testing.T) {
   srv, wd := stubServer(t)
+  defer os.RemoveAll(wd)
   stubFile(t, wd, "foo.js", "bar")
   file := filepath.Join(wd, "foo.js")
 
@@ -45,6 +46,7 @@ func TestProcessedSingleFile(t *testing.T) {
 
 func TestProcessedConcatenates(t *testing.T) {
   srv, wd := stubServer(t)
+  defer os.RemoveAll(wd)
   stubFile(t, wd, "foo.js", "//= require bar\nfoo")
   stubFile(t, wd, "bar.js", "//= require baz.js\nbar")
   stubFile(t, wd, "baz.js", "baz")

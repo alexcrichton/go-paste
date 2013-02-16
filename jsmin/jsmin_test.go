@@ -30,6 +30,7 @@ func stubFile(t *testing.T, wd, file, contents string) {
 
 func TestJsmin(t *testing.T) {
   srv, wd := stubServer(t)
+  defer os.RemoveAll(wd)
   stubFile(t, wd, "foo.js", "var longname = 0x1;\nvar foo = longname;")
 
   resp, err := http.Get(srv.URL + "/foo.js")

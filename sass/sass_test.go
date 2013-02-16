@@ -30,6 +30,7 @@ func stubFile(t *testing.T, wd, file, contents string) {
 
 func TestSass(t *testing.T) {
   srv, wd := stubServer(t)
+  defer os.RemoveAll(wd)
   stubFile(t, wd, "foo.css", "#foo {\nwidth: 100px;\n}")
   stubFile(t, wd, "bar.scss", "#foo {\nwidth: 100px;\n}")
   compressed := "#foo{width:100px;}\n"
