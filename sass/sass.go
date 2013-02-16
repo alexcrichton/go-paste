@@ -1,35 +1,38 @@
 package sass
-
 // +build cgo
 
-import "github.com/suapapa/go_sass"
+// #cgo LDFLAGS: -lsass
+// #include <sass_interface.h>
+import "C"
+
+import "errors"
 import "github.com/alexcrichton/go-paste"
 import "os"
 
-type Compiler struct {
-  sass.Compiler
-}
-
 func init() {
-  c := &Compiler{}
-  c.OutputStyle = sass.STYLE_COMPRESSED
-  c.SourceComments = true
-
-  paste.RegisterProcessor(c, ".css")
+  paste.RegisterProcessor(paste.ProcessorFunc(compile), ".css")
   paste.RegisterAlias(".css", ".scss")
 }
 
-func (c *Compiler) Process(infile, outfile string) error {
-  out, err := c.CompileFile(infile)
-  if err != nil {
-    return err
+func compile(infile, outfile string) error {
+  ctx := C.sass_new_file_context()
+  defer C.sass_free_file_context(ctx)
+
+  ctx.options.output_style = C.SASS_STYLE_COMPRESSED
+  ctx.input_path = C.CString(infile)
+
+  ret := C.sass_compile_file(ctx)
+
+  if ret != 0 || ctx.error_status != 0 {
+    return errors.New(C.GoString(ctx.error_message))
   }
 
-  f, err := os.Create(outfile)
+  out, err := os.Create(outfile)
   if err != nil {
     return err
   }
-  f.Write([]byte(out))
-  f.Close()
+  out.Write([]byte(C.GoString(ctx.output_string)))
+  out.Close()
+
   return nil
 }
