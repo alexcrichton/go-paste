@@ -18,7 +18,7 @@ func check(t *testing.T, e error) {
 func stubServer(t *testing.T) (*httptest.Server, string) {
   tmpdir, err := ioutil.TempDir(os.TempDir(), "paste")
   check(t, err)
-  srv := paste.FileServer(paste.Config{Root: tmpdir})
+  srv := paste.FileServer(paste.Config{Root: tmpdir, Compressed: true})
   return httptest.NewServer(srv), tmpdir
 }
 

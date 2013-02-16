@@ -9,7 +9,7 @@ import "path/filepath"
 func init() {
   RegisterProcessor(ProcessorFunc(func(infile, outfile string) error {
     return nil
-  }), ".js")
+  }), ".js", false)
 }
 
 func TestProcessedSingleFile(t *testing.T) {

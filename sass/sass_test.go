@@ -15,14 +15,14 @@ func check(t *testing.T, e error) {
   }
 }
 
-func stubServer(t *testing.T) (paste.Server, string) {
+func stubServer(t *testing.T, c bool) (paste.Server, string) {
   tmpdir, err := ioutil.TempDir(os.TempDir(), "paste")
   check(t, err)
-  return paste.FileServer(paste.Config{Root: tmpdir}), tmpdir
+  return paste.FileServer(paste.Config{Root: tmpdir, Compressed: c}), tmpdir
 }
 
-func stub(t *testing.T) (*httptest.Server, string) {
-  srv, wd := stubServer(t)
+func stub(t *testing.T, compress bool) (*httptest.Server, string) {
+  srv, wd := stubServer(t, compress)
   return httptest.NewServer(srv), wd
 }
 
@@ -34,18 +34,17 @@ func stubFile(t *testing.T, wd, file, contents string) {
 }
 
 func TestSass(t *testing.T) {
-  srv, wd := stub(t)
+  srv, wd := stub(t, true)
   defer os.RemoveAll(wd)
   defer srv.Close()
   stubFile(t, wd, "foo.css", "#foo {\nwidth: 100px;\n}")
-  stubFile(t, wd, "bar.scss", "#foo {\nwidth: 100px;\n}")
-  compressed := "#foo{width:100px;}\n"
+  stubFile(t, wd, "bar.scss", "#foo {\n#bar { width: 100px;\n}\n}")
 
   resp, err := http.Get(srv.URL + "/foo.css")
   check(t, err)
   s, err := ioutil.ReadAll(resp.Body)
   check(t, err)
-  if string(s) != compressed {
+  if string(s) != "#foo{width:100px;}\n" {
     t.Errorf("wrong contents:\n%s", string(s))
   }
 
@@ -54,10 +53,25 @@ func TestSass(t *testing.T) {
   check(t, err)
   s, err = ioutil.ReadAll(resp.Body)
   check(t, err)
-  if string(s) != compressed {
+  if string(s) != "#foo #bar{width:100px;}\n" {
     t.Errorf("wrong contents:\n%s", string(s))
   }
   if !strings.Contains(resp.Header.Get("Content-Type"), "text/css") {
     t.Errorf("wrong content type: %s", resp.Header.Get("Content-Type"))
+  }
+}
+
+func TestSassUncompressed(t *testing.T) {
+  srv, wd := stub(t, false)
+  defer os.RemoveAll(wd)
+  defer srv.Close()
+  stubFile(t, wd, "bar.scss", "#foo {\n#bar { width: 100px;\n}\n}")
+
+  resp, err := http.Get(srv.URL + "/bar.css")
+  check(t, err)
+  s, err := ioutil.ReadAll(resp.Body)
+  check(t, err)
+  if !strings.Contains(string(s), "#foo #bar") {
+    t.Errorf("wrong contents:\n%s", string(s))
   }
 }

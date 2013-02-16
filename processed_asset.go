@@ -81,22 +81,8 @@ func newProcessed(s *fileServer, logical, path string) (Asset, error) {
   copyFile(file, asset.static.pathname)
   file.Close()
 
-  arr, ok := processors[filepath.Ext(asset.static.logical)]
-  if ok {
-    tmpdir, err := ioutil.TempDir("", "paste")
-    defer os.RemoveAll(tmpdir)
-    if err != nil {
-      return nil, err
-    }
-    for _, p := range arr {
-      err = p.Process(asset.Pathname(), filepath.Join(tmpdir, "foo"))
-      os.Rename(filepath.Join(tmpdir, "foo"), asset.Pathname())
-      if err != nil {
-        return nil, err
-      }
-    }
-  }
-
+  asset.process(filepath.Ext(asset.static.pathname), s.config.Compressed)
+  asset.process(filepath.Ext(asset.static.logical), s.config.Compressed)
   return asset, nil
 }
 
@@ -133,4 +119,24 @@ func copyFile(w io.Writer, path string) {
   if err != nil { panic(err) }
   io.Copy(w, f)
   f.Close()
+}
+
+func (a *processedAsset) process(ext string, compress bool) error {
+  arr, ok := processors[ext]
+  if !ok { return nil }
+
+  tmpdir, err := ioutil.TempDir("", "paste")
+  defer os.RemoveAll(tmpdir)
+  if err != nil {
+    return err
+  }
+  for _, p := range arr {
+    if p.compressor && !compress { continue }
+    err = p.processor.Process(a.Pathname(), filepath.Join(tmpdir, "foo"))
+    os.Rename(filepath.Join(tmpdir, "foo"), a.Pathname())
+    if err != nil {
+      return err
+    }
+  }
+  return nil
 }

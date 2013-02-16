@@ -5,7 +5,7 @@ import "os"
 import "testing"
 
 func TestCompile(t *testing.T) {
-  srv, wd := stubServer(t)
+  srv, wd := stubServer(t, true)
   defer os.RemoveAll(wd)
   dst, err := ioutil.TempDir("", "paste")
   check(t, err)

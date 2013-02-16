@@ -15,11 +15,12 @@ import "github.com/alexcrichton/go-paste"
 import "os"
 
 func init() {
-  paste.RegisterProcessor(paste.ProcessorFunc(compile), ".css")
+  paste.RegisterProcessor(paste.ProcessorFunc(translate), ".scss", false)
+  paste.RegisterProcessor(paste.ProcessorFunc(minify), ".css", true)
   paste.RegisterAlias(".css", ".scss")
 }
 
-func compile(infile, outfile string) error {
+func compile(infile, outfile string, typ int) error {
   ctx := C.sass_new_file_context()
   defer C.sass_free_file_context(ctx)
 
@@ -40,4 +41,12 @@ func compile(infile, outfile string) error {
   out.Close()
 
   return nil
+}
+
+func translate(infile, outfile string) error {
+  return compile(infile, outfile, C.SASS_STYLE_NESTED)
+}
+
+func minify(infile, outfile string) error {
+  return compile(infile, outfile, C.SASS_STYLE_COMPRESSED)
 }

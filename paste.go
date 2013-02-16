@@ -97,32 +97,39 @@ type Processor interface {
   Process(infile, outfile string) error
 }
 
+type processor struct {
+  processor Processor
+  compressor bool
+}
+
 // Easy way of implementing a processor as just a function
 type ProcessorFunc func(infile, outfile string) error
 
 // Global registry of processors and aliases
-var processors = make(map[string][]Processor)
+var processors = make(map[string][]processor)
 var aliases = make(map[string][]string)
 
 // Adds a processor to run for the given extension whenever files are processed.
+// The compressor flag indicates whether this is a compressor or not.
+// Compressors aren't necessarily always run depending on configuration
 //
 // Example:
 //
 //    import "github.com/alexcrichton/go-paste"
 //
 //    func init() {
-//      paste.RegisterProcessor(paste.ProcessorFunc(minify), ".js")
+//      paste.RegisterProcessor(paste.ProcessorFunc(minify), ".js", true)
 //    }
 //
 //    func process(infile string, outfile string) error {
 //      // ... do something like invoke the closure compiler
 //    }
-func RegisterProcessor(p Processor, ext string) {
+func RegisterProcessor(p Processor, ext string, compressor bool) {
   prev, ok := processors[ext]
   if !ok {
-    prev = make([]Processor, 0)
+    prev = make([]processor, 0)
   }
-  prev = append(prev, p)
+  prev = append(prev, processor{processor: p, compressor: compressor})
   processors[ext] = prev
 }
 

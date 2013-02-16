@@ -9,7 +9,7 @@ import "github.com/alexcrichton/go-paste"
 import "os"
 
 func init() {
-  paste.RegisterProcessor(paste.ProcessorFunc(minify), ".js")
+  paste.RegisterProcessor(paste.ProcessorFunc(minify), ".js", true)
 }
 
 func minify(infile, outfile string) error {
