@@ -4,3 +4,4 @@ before_install:
   - cd libsass
   - ./configure --prefix=/usr 1> /dev/null
   - sudo make install 1> /dev/null
+  - sudo ln -nsf /bin/true /usr/bin/true
