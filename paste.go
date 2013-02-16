@@ -31,7 +31,7 @@ type fileServer struct {
   tmpdir string
   assets map[string]*assetMeta
   sync.Mutex
-  Version string
+  version string
 }
 
 type Processor interface {
@@ -61,9 +61,9 @@ func RegisterAlias(extension, alias string) {
   aliases[extension] = prev
 }
 
-func FileServer(path string) Server {
+func FileServer(path string, version string) Server {
   return &fileServer{ fsRoot: path, assets: make(map[string]*assetMeta),
-                      tmpdir: "tmp" }
+                      tmpdir: "tmp", version: version }
 }
 
 func (p ProcessorFunc) Process(infile, outfile string) error {

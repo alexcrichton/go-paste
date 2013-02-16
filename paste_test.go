@@ -42,7 +42,7 @@ func TestFindDigest(t *testing.T) {
 func stubServer(t *testing.T) (*fileServer, string) {
   tmpdir, err := ioutil.TempDir(os.TempDir(), "paste")
   check(t, err)
-  return FileServer(tmpdir).(*fileServer), tmpdir
+  return FileServer(tmpdir, "").(*fileServer), tmpdir
 }
 
 func stub(t *testing.T) (*httptest.Server, string) {
