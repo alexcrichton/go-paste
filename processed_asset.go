@@ -65,7 +65,7 @@ func newProcessed(s *fileServer, logical, path string) (Asset, error) {
   }
   asset.digest = hexdigestString(s, digest)
 
-  compiled := filepath.Join(filepath.Join(s.fsRoot, s.tmpdir), asset.digest)
+  compiled := filepath.Join(s.config.TempDir, asset.digest)
   compiled += filepath.Ext(logical)
   os.MkdirAll(filepath.Dir(compiled), 0755)
   file, err := os.Create(compiled)

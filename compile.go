@@ -18,6 +18,7 @@ type manifest map[string]string
 type compiledServer struct {
   root string
   precompiled map[string]*precompiledAsset
+  config Config
 }
 
 type precompiledAsset struct {
@@ -48,7 +49,7 @@ func (s *fileServer) Compile(dest string) error {
     wg.Add(1)
   }
 
-  myerr := filepath.Walk(s.fsRoot,
+  myerr := filepath.Walk(s.config.Root,
                          func(path string, info os.FileInfo, err error) error {
     if err != nil { return err }
     if info.IsDir() { return nil }
@@ -88,7 +89,7 @@ func (s *fileServer) compileAsset(dest, path string, m manifest) error {
   }
 
   /* Actual compilation of the asset itself */
-  logical := path[len(s.fsRoot) + 1 : len(path) - len(ext)] + alias
+  logical := path[len(s.config.Root) + 1 : len(path) - len(ext)] + alias
   asset, err := s.Asset(logical)
   if err != nil { return err }
 
@@ -173,16 +174,14 @@ func CompiledFileServer(root string) (Server, error) {
   return srv, nil
 }
 
-func (c *compiledServer) AssetPath(logical string, digest bool) (string, error){
+func (c *compiledServer) AssetPath(logical string) (string, error){
   asset, err := c.Asset(logical)
   if err != nil {
     return "", err
-  } else if digest {
-    logical = asset.LogicalName()
-    ext := path.Ext(logical)
-    return logical[:len(logical) - len(ext)] + "-" + asset.Digest() + ext, nil
   }
-  return asset.LogicalName(), nil
+  logical = asset.LogicalName()
+  ext := path.Ext(logical)
+  return logical[:len(logical) - len(ext)] + "-" + asset.Digest() + ext, nil
 }
 
 func (c *compiledServer) Compile(dst string) error {
@@ -199,6 +198,10 @@ func (s *compiledServer) Asset(logical string) (Asset, error) {
     return asset, nil
   }
   return nil, errors.New(fmt.Sprintf("asset not precompiled: %s", logical))
+}
+
+func (s *compiledServer) Config() *Config {
+  return &s.config
 }
 
 func (a *precompiledAsset) Digest() string      { return a.digest }

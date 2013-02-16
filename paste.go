@@ -35,13 +35,12 @@ type Server interface {
   // Implemented to be mountable at a path via http.Handler
   http.Handler
 
-  // Given the 'logical' name of an asset and whether the digest is requested in
-  // the filename, returns the pathname of the asset. This should be used for
-  // url-generation of assets.
+  // Given the 'logical' name of an asset, returns the pathname of the asset.
+  // This should be used for url-generation of assets.
   //
   // An error is returned if the asset could not be found or could not be
   // processed for one reason or another
-  AssetPath(logical string, digest bool) (string, error)
+  AssetPath(logical string) (string, error)
 
   // Compiles all assets into the 'dst' directory. This is intended to be
   // invoked before deploying an application. The compiled assets are generated
@@ -60,16 +59,34 @@ type Server interface {
   // Fetches an Asset instance for a given logical path, returning any errors
   // encountered along the way
   Asset(logical string) (Asset, error)
+
+  // Returns the configuration of this server so it can be modified for all
+  // future work the server does
+  Config() *Config
 }
 
 // Version of a server which watches for file names and regenerates files as
 // necessary.
 type fileServer struct {
-  fsRoot string
-  tmpdir string
   assets map[string]*assetMeta
+  config Config
   sync.Mutex
-  version string
+}
+
+// Configuration for when creating a FileServer
+type Config struct {
+  // String to prepend to the contents of everything being digested. When this
+  // changes all digests change, so this acts as a 'cache buster'
+  Version string
+
+  // Location in the filesystem which all assets are to be derived from
+  Root string
+
+  // Flag if output should be compressed or not
+  Compressed bool
+
+  // Location to put intermediate files when compiling
+  TempDir string
 }
 
 // A processor is a method of putting an asset through a 'pipeline' of
@@ -141,15 +158,28 @@ func RegisterAlias(extension, alias string) {
 // The version argument is some string to prepend to all hashes such that when
 // it changes the digests of all assets will change. This is meant for an easy
 // form of 'cache busting'
-func FileServer(path string, version string) Server {
-  abs, err := filepath.Abs(path)
+func FileServer(c Config) Server {
+  abs, err := filepath.Abs(c.Root)
   if err != nil { panic(err) }
-  return &fileServer{ fsRoot: abs, assets: make(map[string]*assetMeta),
-                      tmpdir: "tmp", version: version }
+  c.Root = abs
+
+  if c.TempDir == "" {
+    c.TempDir = filepath.Join(c.Root, "tmp")
+  } else {
+    abs, err = filepath.Abs(c.TempDir)
+    if err != nil { panic(err) }
+    c.TempDir = abs
+  }
+
+  return &fileServer{ assets: make(map[string]*assetMeta), config: c }
 }
 
 func (p ProcessorFunc) Process(infile, outfile string) error {
   return p(infile, outfile)
+}
+
+func (s *fileServer) Config() *Config {
+  return &s.config
 }
 
 func (s *fileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -243,7 +273,7 @@ func (s *fileServer) buildAsset(logical string) (Asset, error) {
 }
 
 func (s *fileServer) resolve(logical string) (string, error) {
-  try := filepath.Join(s.fsRoot, logical)
+  try := filepath.Join(s.config.Root, logical)
   _, err := os.Stat(try)
   if err == nil {
     return try, nil
@@ -252,7 +282,7 @@ func (s *fileServer) resolve(logical string) (string, error) {
   candidates, ok := aliases[ext]
   if ok {
     for _, cand := range candidates {
-      try = filepath.Join(s.fsRoot, logical[:len(logical) - len(ext)] + cand)
+      try = filepath.Join(s.config.Root, logical[:len(logical) - len(ext)] + cand)
       _, err = os.Stat(try)
       if err == nil {
         return try, nil
@@ -262,15 +292,10 @@ func (s *fileServer) resolve(logical string) (string, error) {
   return "", err
 }
 
-func (s *fileServer) AssetPath(logical string, digest bool) (string, error) {
+func (s *fileServer) AssetPath(logical string) (string, error) {
   asset, err := s.Asset(logical)
   if err != nil {
     return "", err
-  }
-  if digest {
-    dir, file := path.Split(asset.LogicalName())
-    ext := path.Ext(file)
-    return dir + file[:len(file) - len(ext)] + "-" + asset.Digest() + ext, nil
   }
   return asset.LogicalName(), nil
 }

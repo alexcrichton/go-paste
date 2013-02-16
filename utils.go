@@ -8,7 +8,7 @@ import "os"
 func hexdigest(srv *fileServer, f io.Reader) string {
   hash := md5.New()
   hash.Write([]byte(Version))
-  hash.Write([]byte(srv.version))
+  hash.Write([]byte(srv.config.Version))
   io.Copy(hash, f)
   return hex.EncodeToString(hash.Sum(nil))
 }
@@ -16,7 +16,7 @@ func hexdigest(srv *fileServer, f io.Reader) string {
 func hexdigestString(srv *fileServer, s string) string {
   hash := md5.New()
   hash.Write([]byte(Version))
-  hash.Write([]byte(srv.version))
+  hash.Write([]byte(srv.config.Version))
   hash.Write([]byte(s))
   return hex.EncodeToString(hash.Sum(nil))
 }

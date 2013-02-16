@@ -82,8 +82,8 @@ func TestCompiledServerAssetPath(t *testing.T) {
   srv, dst := stubCompiledServer(t)
   defer os.RemoveAll(dst)
 
-  check := func(path string, digest bool, err bool) {
-    _, e := srv.AssetPath(path, digest)
+  check := func(path string, err bool) {
+    _, e := srv.AssetPath(path)
     if err && e == nil {
       t.Errorf("expected an error for %s", path)
     } else if !err && e != nil {
@@ -91,10 +91,7 @@ func TestCompiledServerAssetPath(t *testing.T) {
     }
   }
 
-  check("foo.js", false, true)
-  check("foo.js", true, true)
-  check("foo/foo.js", false, false)
-  check("foo/foo.js", true, false)
-  check("/foo/foo.js", false, false)
-  check("/foo/foo.js", true, false)
+  check("foo.js", true)
+  check("foo/foo.js", false)
+  check("/foo/foo.js", false)
 }

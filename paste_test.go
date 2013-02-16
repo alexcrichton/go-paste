@@ -42,7 +42,7 @@ func TestFindDigest(t *testing.T) {
 func stubServer(t *testing.T) (*fileServer, string) {
   tmpdir, err := ioutil.TempDir(os.TempDir(), "paste")
   check(t, err)
-  return FileServer(tmpdir, "").(*fileServer), tmpdir
+  return FileServer(Config{Root: tmpdir}).(*fileServer), tmpdir
 }
 
 func stub(t *testing.T) (*httptest.Server, string) {
@@ -169,27 +169,17 @@ func TestAssetPaths(t *testing.T) {
   srv, wd := stubServer(t)
   defer os.RemoveAll(wd)
   stubFile(t, wd, "foo.js", "asdf")
-  a, err := srv.Asset("foo.js")
-  check(t, err)
-  digest := a.Digest()
 
   /* nonexistent file */
-  _, err = srv.AssetPath("asdf", false)
+  _, err := srv.AssetPath("asdf")
   if err == nil {
     t.Errorf("expected an error")
   }
 
-  /* non-digested file */
-  ret, err := srv.AssetPath("foo.js", false)
+  /* extistent file */
+  ret, err := srv.AssetPath("foo.js")
   if err != nil {
     t.Errorf("got error: %s", err.Error())
   }
   testEq(t, ret, "/foo.js")
-
-  /* digested file, yum */
-  ret, err = srv.AssetPath("foo.js", true)
-  if err != nil {
-    t.Errorf("got error: %s", err.Error())
-  }
-  testEq(t, ret, "/foo-" + digest + ".js")
 }

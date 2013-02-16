@@ -23,7 +23,7 @@ func main() {
 
   // Assumes that there's a directory called 'assets' at the root of your
   // repository containing all the assets
-  srv := paste.FileServer("./assets")
+  srv := paste.FileServer(paste.Config{Root: "./assets"})
   http.Handle("/assets/", http.StripPrefix("/assets", srv))
 
   // ...
@@ -45,7 +45,7 @@ func main() {
 var srv paste.Server
 
 func AssetPath(path string) string {
-  path, err := srv.AssetPath(path, false /* no digest in the filename */)
+  path, err := srv.AssetPath(path)
   // deal with err if non-nil
   return path
 }
@@ -138,17 +138,18 @@ package main
 
 import "github.com/alexcrichton/go-paste"
 
-var PasteServer = paste.FileServer("./assets")
+var PasteServer = paste.FileServer(paste.Config{Root: "./assets"})
 ```
 
 And then in development you'd just use `go build` whereas to build a production
-version of the server you'd use `go build -tags prod`. Additionally the prod and
-dev files could have a global constant `AssetDigest` which is passed to the
-`AssetPath` function so that in production all urls would have the digest in
-them (to have long expiry dates) whereas in development they would not (for
-better debugging)
+version of the server you'd use `go build -tags prod`.
 
-Additionally, none of the processing packages or dependencies are required in
-production, so the `dev.go` file could contain all the imports of various
-processors. This just requires that the precompilation is done on some machine
-which does have all the dependencies.
+Here's some notable changes between `CompiledFileServer` and `FileServer`:
+
+* None of the processing packages or dependencies are required in production, so
+  the `dev.go` file could contain all the imports of various processors. This
+  just requires that the precompilation is done on some machine which does have
+  all the dependencies.
+* URLs generated have a digest in them with `CompiledFileServer` so a very long
+  expiration date can be set on them because the digest will change as soon as
+  the contents change.

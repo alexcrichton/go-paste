@@ -6,8 +6,6 @@
 // will also transform all 'scss' files into 'css' files.
 package sass
 
-// +build cgo
-
 // #cgo LDFLAGS: -lsass
 // #include <sass_interface.h>
 import "C"
