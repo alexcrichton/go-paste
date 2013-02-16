@@ -51,6 +51,7 @@ func stub(t *testing.T) (*httptest.Server, string) {
 }
 
 func stubFile(t *testing.T, wd, file, contents string) {
+  os.MkdirAll(filepath.Dir(filepath.Join(wd, file)), 0755)
   f, err := os.Create(filepath.Join(wd, file))
   check(t, err)
   f.Write([]byte(contents))
