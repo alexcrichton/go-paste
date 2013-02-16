@@ -1,4 +1,4 @@
-// Paste is a package for dealing with static assets in web applications
+// Paste is a package for dealing with static assets in web applications.
 //
 // This package is based off the 'sprockets' gem for Rails. The goal is to
 // provide similar functionality while keeping to go-like principles instead of

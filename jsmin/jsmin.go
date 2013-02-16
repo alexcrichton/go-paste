@@ -1,3 +1,7 @@
+// Package for applying 'jsmin' to JS files for paste.
+//
+// When imported, this package will automatically register a processor for all
+// JS files which runs the jsmin program over javascript.
 package jsmin
 
 import "bitbucket.org/maxhauser/jsmin"

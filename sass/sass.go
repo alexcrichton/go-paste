@@ -1,4 +1,11 @@
+// Package for writing/compressing stylesheets with sass.
+//
+// This package requires that 'libsass' is installed on the system and that it's
+// pretty much the current master version (as of this writing). When imported,
+// this file will automatically run all css through the sass compressor and it
+// will also transform all 'scss' files into 'css' files.
 package sass
+
 // +build cgo
 
 // #cgo LDFLAGS: -lsass
