@@ -97,40 +97,60 @@ type Processor interface {
   Process(infile, outfile string) error
 }
 
-type processor struct {
-  processor Processor
-  compressor bool
-}
-
 // Easy way of implementing a processor as just a function
 type ProcessorFunc func(infile, outfile string) error
 
-// Global registry of processors and aliases
-var processors = make(map[string][]processor)
+// Global registries modified by 'Register*'
+var processors = make(map[string]Processor)
+var compressors = make(map[string]Processor)
 var aliases = make(map[string][]string)
 
-// Adds a processor to run for the given extension whenever files are processed.
-// The compressor flag indicates whether this is a compressor or not.
-// Compressors aren't necessarily always run depending on configuration
+// Registers a processor to run for the given extension whenever files are
+// processed. It is considered an error to register more than one processor for
+// a given file extension and this function will panic as a result.
 //
 // Example:
 //
 //    import "github.com/alexcrichton/go-paste"
 //
 //    func init() {
-//      paste.RegisterProcessor(paste.ProcessorFunc(minify), ".js", true)
+//      paste.RegisterProcessor(paste.ProcessorFunc(process), ".sass")
 //    }
 //
 //    func process(infile string, outfile string) error {
+//      // ... convert the sass in 'infile' to css in 'outfile'
+//    }
+func RegisterProcessor(p Processor, ext string) {
+  _, ok := processors[ext]
+  if ok {
+    panic("Processor already registered for " + ext)
+  }
+  processors[ext] = p
+}
+
+// Registers a compressor to run for the given extension whenever files are
+// compressed. It is considered an error to register more than one compressor
+// for a given file extension and this function will panic as a result.
+//
+// Compressors are not always run, they can be configured to not run if desired
+//
+// Example:
+//
+//    import "github.com/alexcrichton/go-paste"
+//
+//    func init() {
+//      paste.RegisterCompressor(paste.ProcessorFunc(minify), ".js")
+//    }
+//
+//    func minify(infile string, outfile string) error {
 //      // ... do something like invoke the closure compiler
 //    }
-func RegisterProcessor(p Processor, ext string, compressor bool) {
-  prev, ok := processors[ext]
-  if !ok {
-    prev = make([]processor, 0)
+func RegisterCompressor(p Processor, ext string) {
+  _, ok := compressors[ext]
+  if ok {
+    panic("Compressor already registered for " + ext)
   }
-  prev = append(prev, processor{processor: p, compressor: compressor})
-  processors[ext] = prev
+  compressors[ext] = p
 }
 
 // Registers an alias from one extension to another. This means that any files
@@ -272,8 +292,9 @@ func (s *fileServer) buildAsset(logical string) (Asset, error) {
   if err != nil {
     return nil, err
   }
-  _, ok := processors[path.Ext(logical)]
-  if ok {
+  _, ok1 := processors[path.Ext(pathname)]
+  _, ok2 := compressors[path.Ext(logical)]
+  if ok1 || (ok2 && s.config.Compressed) {
     return newProcessed(s, logical, pathname)
   }
   return newStatic(s, logical, pathname)

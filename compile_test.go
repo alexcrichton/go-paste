@@ -49,7 +49,6 @@ func TestCompile(t *testing.T) {
   contains("/foo/foo.js.gz", "bar1")
   contains("/foo.css", "bar2")
   contains("/foo.css.gz", "bar2")
-  println(dst)
 
   asset, err := srv.Asset("foo/foo.js")
   check(t, err)

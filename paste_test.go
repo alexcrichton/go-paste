@@ -86,7 +86,7 @@ func TestGetNonExist(t *testing.T) {
 func ValidateHeaders(t *testing.T, resp *http.Response,
                      contents, hash string) string {
   if resp.StatusCode != http.StatusOK {
-    t.Errorf("expected 200 return, got %d", resp.StatusCode)
+    t.Fatalf("expected 200 return, got %d", resp.StatusCode)
   }
   if resp.Header.Get("Last-Modified") == "" {
     t.Errorf("expected non-empty last-modified header")

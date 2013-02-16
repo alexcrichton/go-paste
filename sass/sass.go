@@ -15,8 +15,8 @@ import "github.com/alexcrichton/go-paste"
 import "os"
 
 func init() {
-  paste.RegisterProcessor(paste.ProcessorFunc(translate), ".scss", false)
-  paste.RegisterProcessor(paste.ProcessorFunc(minify), ".css", true)
+  paste.RegisterProcessor(paste.ProcessorFunc(translate), ".scss")
+  paste.RegisterCompressor(paste.ProcessorFunc(minify), ".css")
   paste.RegisterAlias(".css", ".scss")
 }
 

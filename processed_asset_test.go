@@ -2,14 +2,20 @@ package paste
 
 import "testing"
 import "os"
+import "io"
 import "io/ioutil"
 import "time"
 import "path/filepath"
 
 func init() {
   RegisterProcessor(ProcessorFunc(func(infile, outfile string) error {
+    out, _ := os.Create(outfile)
+    in, _ := os.Open(infile)
+    io.Copy(out, in)
+    in.Close()
+    out.Close()
     return nil
-  }), ".js", false)
+  }), ".js")
 }
 
 func TestProcessedSingleFile(t *testing.T) {

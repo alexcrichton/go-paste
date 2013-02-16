@@ -43,14 +43,29 @@ func newProcessed(s *fileServer, logical, path string) (Asset, error) {
   }
 
   asset := &processedAsset{static: static, dependencies: make([]Asset, 0)}
+
+  /* Process and compress the asset */
+  processor, ok := processors[filepath.Ext(asset.static.pathname)]
+  src := asset.static.pathname
+  if ok {
+    dst, err := ioutil.TempFile("", "paste")
+    if err == nil {
+      dst.Close()
+      err = processor.Process(src, dst.Name())
+      src = dst.Name()
+      defer os.Remove(src)
+    }
+    if err != nil { return nil, err }
+  }
+
   paths, err := asset.requiredPaths(jsRequires)
   if err != nil {
     return nil, err
   }
 
+  /* collect the digests and mtimes into the processed version */
   digest := asset.static.digest
   asset.mtime = asset.static.mtime
-
   for _, dep := range paths {
     d, err := s.Asset(dep)
     if err != nil {
@@ -65,6 +80,7 @@ func newProcessed(s *fileServer, logical, path string) (Asset, error) {
   }
   asset.digest = hexdigestString(s, digest)
 
+  /* Concatenate all assets into a temp file */
   compiled := filepath.Join(s.config.TempDir, asset.digest)
   compiled += filepath.Ext(logical)
   os.MkdirAll(filepath.Dir(compiled), 0755)
@@ -73,16 +89,24 @@ func newProcessed(s *fileServer, logical, path string) (Asset, error) {
     return nil, err
   }
   asset.pathname = file.Name()
-
   for _, dep := range asset.dependencies {
     copyFile(file, dep.Pathname())
     file.Write([]byte{'\n'})
   }
-  copyFile(file, asset.static.pathname)
+  copyFile(file, src)
   file.Close()
 
-  asset.process(filepath.Ext(asset.static.pathname), s.config.Compressed)
-  asset.process(filepath.Ext(asset.static.logical), s.config.Compressed)
+  compressor, ok := compressors[filepath.Ext(asset.static.logical)]
+  if ok && s.config.Compressed {
+    dst, err := ioutil.TempFile("", "paste")
+    if err == nil {
+      dst.Close()
+      err = compressor.Process(compiled, dst.Name())
+      os.Rename(dst.Name(), compiled)
+    }
+    if err != nil { return nil, err }
+  }
+
   return asset, nil
 }
 
@@ -119,24 +143,4 @@ func copyFile(w io.Writer, path string) {
   if err != nil { panic(err) }
   io.Copy(w, f)
   f.Close()
-}
-
-func (a *processedAsset) process(ext string, compress bool) error {
-  arr, ok := processors[ext]
-  if !ok { return nil }
-
-  tmpdir, err := ioutil.TempDir("", "paste")
-  defer os.RemoveAll(tmpdir)
-  if err != nil {
-    return err
-  }
-  for _, p := range arr {
-    if p.compressor && !compress { continue }
-    err = p.processor.Process(a.Pathname(), filepath.Join(tmpdir, "foo"))
-    os.Rename(filepath.Join(tmpdir, "foo"), a.Pathname())
-    if err != nil {
-      return err
-    }
-  }
-  return nil
 }
