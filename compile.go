@@ -13,6 +13,8 @@ import "runtime"
 import "sync"
 import "time"
 
+type manifest map[string]string
+
 type compiledServer struct {
   root string
   precompiled map[string]*precompiledAsset
@@ -27,7 +29,7 @@ type precompiledAsset struct {
 func (s *fileServer) Compile(dest string) error {
   /* Compiling takes awhile, parallelize! */
   paths := make(chan string)
-  manifest := make(Manifest)
+  manifest := make(manifest)
   var err error
   var wg sync.WaitGroup
 
@@ -70,7 +72,7 @@ func (s *fileServer) Compile(dest string) error {
   return enc.Encode(manifest)
 }
 
-func (s *fileServer) compileAsset(dest, path string, m Manifest) error {
+func (s *fileServer) compileAsset(dest, path string, m manifest) error {
   /* If this file's extension is an alias for another, then we should use the
      alias instead of the actual extension in the output file */
   ext := filepath.Ext(path)
@@ -137,11 +139,20 @@ func (s *fileServer) compileAsset(dest, path string, m Manifest) error {
   return nil
 }
 
+// Creates a new compiled file server to serve up files. A compiled file server
+// is one which is derived from an instance of FileServer(). The root passed in
+// to this file server must be the result of some previous result to Compile(),
+// and the returned server will serve up all the compiled assets in that folder.
+//
+// The goal of this file server is to be used in something like a production
+// environment if necessary. None of the operations of this server touch the
+// filesystem except for actually serving up the files. This assumes that all
+// assets have been precompiled and will do no more processing.
 func CompiledFileServer(root string) (Server, error) {
   srv := &compiledServer { root: root,
                            precompiled: make(map[string]*precompiledAsset) }
 
-  manifest := make(Manifest)
+  manifest := make(manifest)
   mfile, err := os.Open(filepath.Join(root, "manifest.json"))
   if err != nil {
     return nil, err
