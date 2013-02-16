@@ -16,7 +16,7 @@ configuration. To use it, you'll have to go through steps similar to this:
 1. Create a `FileServer` instance and install it at some path:
 
 ```go
-import "github.com/alexcrichton/go-paste
+import "github.com/alexcrichton/go-paste"
 
 func main() {
   // ...
@@ -93,6 +93,9 @@ this writing, you must also have the HEAD version of `libsass` installed.
 You can create files like `foo.scss` which are then served up via the logical
 path of `foo.css`. The contents served up are also processed with sass.
 
+Note that if a deployment is similar to the section below, the requirement of
+`libsass` isn't needed in the production environment
+
 ## Deployment
 
 When deploying an application, you probably don't want to slow down startup of
@@ -144,3 +147,8 @@ dev files could have a global constant `AssetDigest` which is passed to the
 `AssetPath` function so that in production all urls would have the digest in
 them (to have long expiry dates) whereas in development they would not (for
 better debugging)
+
+Additionally, none of the processing packages or dependencies are required in
+production, so the `dev.go` file could contain all the imports of various
+processors. This just requires that the precompilation is done on some machine
+which does have all the dependencies.
