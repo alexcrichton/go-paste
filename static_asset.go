@@ -8,7 +8,7 @@ type staticAsset struct {
   pathname string
   mtime time.Time
   logical string
-  srv *Server
+  srv *fileServer
 }
 
 func (s *staticAsset) Digest() string { return s.digest }
@@ -36,7 +36,7 @@ func (s *staticAsset) Stale() bool {
   return true
 }
 
-func newStatic(s *Server, logical, path string) (*staticAsset, error) {
+func newStatic(s *fileServer, logical, path string) (*staticAsset, error) {
   asset := &staticAsset { pathname: path, logical: logical, srv: s }
   f, stat, err := openStat(path)
   if err != nil {

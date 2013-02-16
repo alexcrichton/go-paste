@@ -9,6 +9,7 @@ func TestCompile(t *testing.T) {
   defer os.RemoveAll(wd)
   dst, err := ioutil.TempDir("", "paste")
   check(t, err)
+  defer os.RemoveAll(dst)
 
   stubFile(t, wd, "foo.scss", "#main {}")
 

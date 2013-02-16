@@ -36,7 +36,7 @@ func (s *processedAsset) Stale() bool {
   return false
 }
 
-func newProcessed(s *Server, logical, path string) (Asset, error) {
+func newProcessed(s *fileServer, logical, path string) (Asset, error) {
   static, err := newStatic(s, logical, path)
   if err != nil {
     return nil, err
@@ -52,7 +52,7 @@ func newProcessed(s *Server, logical, path string) (Asset, error) {
   asset.mtime = asset.static.mtime
 
   for _, dep := range paths {
-    d, err := s.asset(dep)
+    d, err := s.Asset(dep)
     if err != nil {
       return nil, err
     }

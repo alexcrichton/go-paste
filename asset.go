@@ -7,6 +7,5 @@ type Asset interface {
   Pathname()    string
   ModTime()     time.Time
   LogicalName() string
-
   Stale()       bool
 }

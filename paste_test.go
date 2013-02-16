@@ -39,10 +39,10 @@ func TestFindDigest(t *testing.T) {
   testEq(t, b, "")
 }
 
-func stubServer(t *testing.T) (*Server, string) {
+func stubServer(t *testing.T) (*fileServer, string) {
   tmpdir, err := ioutil.TempDir(os.TempDir(), "paste")
   check(t, err)
-  return FileServer(tmpdir), tmpdir
+  return FileServer(tmpdir).(*fileServer), tmpdir
 }
 
 func stub(t *testing.T) (*httptest.Server, string) {
@@ -83,6 +83,35 @@ func TestGetNonExist(t *testing.T) {
   }
 }
 
+func ValidateHeaders(t *testing.T, resp *http.Response,
+                     contents, hash string) string {
+  if resp.StatusCode != http.StatusOK {
+    t.Errorf("expected 200 return, got %d", resp.StatusCode)
+  }
+  if resp.Header.Get("Last-Modified") == "" {
+    t.Errorf("expected non-empty last-modified header")
+  }
+  etag := resp.Header.Get("ETag")
+  if hash != "" && etag != `"` + hash + `"` {
+    t.Errorf("wrong etag %s", etag)
+  }
+  cache := resp.Header.Get("Cache-Control")
+  if (hash != "" && !strings.HasPrefix(cache, "public, max-age=")) ||
+     (hash == "" && cache != "public, must-revalidate") {
+    t.Errorf("wrong cache-control '%s'", cache)
+  }
+
+  s, err := ioutil.ReadAll(resp.Body)
+  check(t, err)
+  if string(s) != contents {
+    t.Errorf("wrong contents %s", string(s))
+  }
+  if etag == "" {
+    return ""
+  }
+  return etag[1:len(etag)-1]
+}
+
 func TestGetExist(t *testing.T) {
   var resp *http.Response
   srv, wd := stub(t)
@@ -92,46 +121,18 @@ func TestGetExist(t *testing.T) {
   stubFile(t, wd, "foo.js", "asdf")
   stubFile(t, wd, "foo.png", "foo")
 
-  ensure := func(contents, hash string) string {
-    if resp.StatusCode != http.StatusOK {
-      t.Errorf("expected 200 return, got %d", resp.StatusCode)
-    }
-    if resp.Header.Get("Last-Modified") == "" {
-      t.Errorf("expected non-empty last-modified header")
-    }
-    etag := resp.Header.Get("ETag")
-    if hash != "" && etag != `"` + hash + `"` {
-      t.Errorf("wrong etag %s", etag)
-    }
-    cache := resp.Header.Get("Cache-Control")
-    if (hash != "" && !strings.HasPrefix(cache, "public, max-age=")) ||
-       (hash == "" && cache != "public, must-revalidate") {
-      t.Errorf("wrong cache-control '%s'", cache)
-    }
-
-    s, err := ioutil.ReadAll(resp.Body)
-    check(t, err)
-    if string(s) != contents {
-      t.Errorf("wrong contents %s", string(s))
-    }
-    if etag == "" {
-      return ""
-    }
-    return etag[1:len(etag)-1]
-  };
-
   resp, err := http.Get(srv.URL + "/foo.js")
   check(t, err)
-  tag := ensure("asdf", "")
+  tag := ValidateHeaders(t, resp, "asdf", "")
   resp, err = http.Get(srv.URL + "/foo-" + tag + ".js")
   check(t, err)
-  ensure("asdf", tag)
+  ValidateHeaders(t, resp, "asdf", tag)
   resp, err = http.Get(srv.URL + "/foo.png")
   check(t, err)
-  tag = ensure("foo", "")
+  tag = ValidateHeaders(t, resp, "foo", "")
   resp, err = http.Get(srv.URL + "/foo-" + tag + ".png")
   check(t, err)
-  ensure("foo", tag)
+  ValidateHeaders(t, resp, "foo", tag)
 }
 
 func TestGetExistNotModified(t *testing.T) {
@@ -140,7 +141,7 @@ func TestGetExistNotModified(t *testing.T) {
   defer srv.Close()
   defer os.RemoveAll(wd)
   stubFile(t, wd, "foo.js", "asdf")
-  a, err := fs.asset("foo.js")
+  a, err := fs.Asset("foo.js")
   check(t, err)
   digest := a.Digest()
 
@@ -168,7 +169,7 @@ func TestAssetPaths(t *testing.T) {
   srv, wd := stubServer(t)
   defer os.RemoveAll(wd)
   stubFile(t, wd, "foo.js", "asdf")
-  a, err := srv.asset("foo.js")
+  a, err := srv.Asset("foo.js")
   check(t, err)
   digest := a.Digest()
 

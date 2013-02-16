@@ -5,7 +5,7 @@ import "encoding/hex"
 import "io"
 import "os"
 
-func hexdigest(srv *Server, f io.Reader) string {
+func hexdigest(srv *fileServer, f io.Reader) string {
   hash := md5.New()
   hash.Write([]byte(Version))
   hash.Write([]byte(srv.Version))
@@ -13,7 +13,7 @@ func hexdigest(srv *Server, f io.Reader) string {
   return hex.EncodeToString(hash.Sum(nil))
 }
 
-func hexdigestString(srv *Server, s string) string {
+func hexdigestString(srv *fileServer, s string) string {
   hash := md5.New()
   hash.Write([]byte(Version))
   hash.Write([]byte(srv.Version))

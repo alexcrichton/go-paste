@@ -11,13 +11,22 @@ import "time"
 var hashRegex = regexp.MustCompile(`(.*)-([a-f0-9]{32})(\.\w+)`)
 var Version = "0.0.0"
 
+type Manifest map[string]string
+
 type assetMeta struct {
   err     error
   Asset
   sync.Mutex
 }
 
-type Server struct {
+type Server interface {
+  http.Handler
+  AssetPath(string, bool) (string, error)
+  Compile(string) error
+  Asset(string) (Asset, error)
+}
+
+type fileServer struct {
   fsRoot string
   tmpdir string
   assets map[string]*assetMeta
@@ -52,25 +61,29 @@ func RegisterAlias(extension, alias string) {
   aliases[extension] = prev
 }
 
-func FileServer(path string) *Server {
-  return &Server{ fsRoot: path, assets: make(map[string]*assetMeta),
-                  tmpdir: "tmp" }
+func FileServer(path string) Server {
+  return &fileServer{ fsRoot: path, assets: make(map[string]*assetMeta),
+                      tmpdir: "tmp" }
 }
 
 func (p ProcessorFunc) Process(infile, outfile string) error {
   return p(infile, outfile)
 }
 
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (s *fileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+  serveHTTP(s, w, r)
+}
+
+func serveHTTP(s Server, w http.ResponseWriter, r *http.Request) {
   dir, file := path.Split(r.URL.Path)
   file, digest := findDigest(file)
-  asset, err := s.asset(path.Join(dir, file))
+  asset, err := s.Asset(path.Join(dir, file))
   if err != nil || (digest != "" && digest != asset.Digest()) {
     http.NotFound(w, r)
     return
   }
 
-  if s.etagMatches(w, r, asset) {
+  if etagMatches(w, r, asset) {
     return
   }
 
@@ -85,8 +98,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
   http.ServeFile(w, r, asset.Pathname())
 }
 
-func (s *Server) etagMatches(w http.ResponseWriter, r *http.Request,
-                             a Asset) bool {
+func etagMatches(w http.ResponseWriter, r *http.Request, a Asset) bool {
   tag := r.Header.Get("If-None-Match")
   if tag == etag(a) {
     w.WriteHeader(http.StatusNotModified)
@@ -108,7 +120,7 @@ func findDigest(file string) (string, string) {
   return matches[1] + matches[3], matches[2]
 }
 
-func (s *Server) asset(logical string) (Asset, error) {
+func (s *fileServer) Asset(logical string) (Asset, error) {
   logical = path.Clean("/" + logical)
   s.Lock()
   ret, ok := s.assets[logical]
@@ -136,7 +148,7 @@ func (s *Server) asset(logical string) (Asset, error) {
   return ret, nil
 }
 
-func (s *Server) buildAsset(logical string) (Asset, error) {
+func (s *fileServer) buildAsset(logical string) (Asset, error) {
   pathname, err := s.resolve(logical)
   if err != nil {
     return nil, err
@@ -148,7 +160,7 @@ func (s *Server) buildAsset(logical string) (Asset, error) {
   return newStatic(s, logical, pathname)
 }
 
-func (s *Server) resolve(logical string) (string, error) {
+func (s *fileServer) resolve(logical string) (string, error) {
   try := filepath.Join(s.fsRoot, logical)
   _, err := os.Stat(try)
   if err == nil {
@@ -168,8 +180,8 @@ func (s *Server) resolve(logical string) (string, error) {
   return "", err
 }
 
-func (s *Server) AssetPath(logical string, digest bool) (string, error) {
-  asset, err := s.asset(logical)
+func (s *fileServer) AssetPath(logical string, digest bool) (string, error) {
+  asset, err := s.Asset(logical)
   if err != nil {
     return "", err
   }
