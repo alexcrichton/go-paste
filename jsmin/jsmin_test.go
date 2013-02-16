@@ -15,10 +15,10 @@ func check(t *testing.T, e error) {
   }
 }
 
-func stubServer(t *testing.T) (*httptest.Server, string) {
+func stubServer(t *testing.T, comp bool) (*httptest.Server, string) {
   tmpdir, err := ioutil.TempDir(os.TempDir(), "paste")
   check(t, err)
-  srv := paste.FileServer(paste.Config{Root: tmpdir, Compressed: true})
+  srv := paste.FileServer(paste.Config{Root: tmpdir, Compressed: comp})
   return httptest.NewServer(srv), tmpdir
 }
 
@@ -30,7 +30,7 @@ func stubFile(t *testing.T, wd, file, contents string) {
 }
 
 func TestJsmin(t *testing.T) {
-  srv, wd := stubServer(t)
+  srv, wd := stubServer(t, true)
   defer os.RemoveAll(wd)
   stubFile(t, wd, "foo.js", "var longname = 0x1;\nvar foo = longname;")
 
@@ -46,5 +46,20 @@ func TestJsmin(t *testing.T) {
   ctype := resp.Header.Get("Content-Type")
   if !strings.Contains(ctype, "application/javascript") {
     t.Errorf("wrong content type: %s", ctype)
+  }
+}
+
+func TestJsminIgnored(t *testing.T) {
+  srv, wd := stubServer(t, false)
+  defer os.RemoveAll(wd)
+  stubFile(t, wd, "foo.js", "var longname = 0x1;\nvar foo = longname;")
+
+  resp, err := http.Get(srv.URL + "/foo.js")
+  check(t, err)
+
+  s, err := ioutil.ReadAll(resp.Body)
+  check(t, err)
+  if !strings.Contains(string(s), "\n") {
+    t.Errorf("wrong contents:\n%s", string(s))
   }
 }

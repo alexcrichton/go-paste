@@ -20,11 +20,12 @@ func init() {
   paste.RegisterAlias(".css", ".scss")
 }
 
-func compile(infile, outfile string, typ int) error {
+func compile(infile, outfile string, typ C.int, comments C.int) error {
   ctx := C.sass_new_file_context()
   defer C.sass_free_file_context(ctx)
 
-  ctx.options.output_style = C.SASS_STYLE_COMPRESSED
+  ctx.options.output_style = typ
+  ctx.options.source_comments = comments
   ctx.input_path = C.CString(infile)
 
   ret := C.sass_compile_file(ctx)
@@ -44,9 +45,9 @@ func compile(infile, outfile string, typ int) error {
 }
 
 func translate(infile, outfile string) error {
-  return compile(infile, outfile, C.SASS_STYLE_NESTED)
+  return compile(infile, outfile, C.SASS_STYLE_NESTED, 1)
 }
 
 func minify(infile, outfile string) error {
-  return compile(infile, outfile, C.SASS_STYLE_COMPRESSED)
+  return compile(infile, outfile, C.SASS_STYLE_COMPRESSED, 0)
 }
