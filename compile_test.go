@@ -1,8 +1,11 @@
 package paste
 
+import "compress/gzip"
+import "io"
 import "io/ioutil"
 import "os"
 import "testing"
+import "strings"
 
 func TestCompile(t *testing.T) {
   srv, wd := stubServer(t)
@@ -19,7 +22,12 @@ func TestCompile(t *testing.T) {
     file, err := os.Open(dst + f)
     check(t, err)
     defer file.Close()
-    s, err := ioutil.ReadAll(file)
+    var input io.Reader = file
+    if strings.HasSuffix(f, ".gz") {
+      input, err = gzip.NewReader(file)
+      check(t, err)
+    }
+    s, err := ioutil.ReadAll(input)
     check(t, err)
     if string(s) != contents {
       t.Errorf("wrong contents:\n%s", string(s))
@@ -27,10 +35,13 @@ func TestCompile(t *testing.T) {
   }
 
   contains("/foo/foo.js", "bar")
+  contains("/foo/foo.js.gz", "bar")
   contains("/foo.css", "bar")
+  contains("/foo.css.gz", "bar")
 
   asset, err := srv.asset("foo/foo.js")
   check(t, err)
 
   contains("/foo/foo-" + asset.Digest() + ".js", "bar")
+  contains("/foo/foo-" + asset.Digest() + ".js.gz", "bar")
 }
