@@ -142,7 +142,9 @@ func RegisterAlias(extension, alias string) {
 // it changes the digests of all assets will change. This is meant for an easy
 // form of 'cache busting'
 func FileServer(path string, version string) Server {
-  return &fileServer{ fsRoot: path, assets: make(map[string]*assetMeta),
+  abs, err := filepath.Abs(path)
+  if err != nil { panic(err) }
+  return &fileServer{ fsRoot: abs, assets: make(map[string]*assetMeta),
                       tmpdir: "tmp", version: version }
 }
 

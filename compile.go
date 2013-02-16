@@ -27,10 +27,12 @@ type precompiledAsset struct {
 }
 
 func (s *fileServer) Compile(dest string) error {
+  dest, err := filepath.Abs(dest)
+  if err != nil { return err }
+
   /* Compiling takes awhile, parallelize! */
   paths := make(chan string)
   manifest := make(manifest)
-  var err error
   var wg sync.WaitGroup
 
   for i := 0; i < runtime.NumCPU(); i++ {
