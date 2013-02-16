@@ -15,10 +15,15 @@ func check(t *testing.T, e error) {
   }
 }
 
-func stubServer(t *testing.T) (*httptest.Server, string) {
+func stubServer(t *testing.T) (*paste.Server, string) {
   tmpdir, err := ioutil.TempDir(os.TempDir(), "paste")
   check(t, err)
-  return httptest.NewServer(paste.FileServer(tmpdir)), tmpdir
+  return paste.FileServer(tmpdir), tmpdir
+}
+
+func stub(t *testing.T) (*httptest.Server, string) {
+  srv, wd := stubServer(t)
+  return httptest.NewServer(srv), wd
 }
 
 func stubFile(t *testing.T, wd, file, contents string) {
@@ -29,8 +34,9 @@ func stubFile(t *testing.T, wd, file, contents string) {
 }
 
 func TestSass(t *testing.T) {
-  srv, wd := stubServer(t)
+  srv, wd := stub(t)
   defer os.RemoveAll(wd)
+  defer srv.Close()
   stubFile(t, wd, "foo.css", "#foo {\nwidth: 100px;\n}")
   stubFile(t, wd, "bar.scss", "#foo {\nwidth: 100px;\n}")
   compressed := "#foo{width:100px;}\n"
