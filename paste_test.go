@@ -96,8 +96,8 @@ func ValidateHeaders(t *testing.T, resp *http.Response,
     t.Errorf("wrong etag %s", etag)
   }
   cache := resp.Header.Get("Cache-Control")
-  if (hash != "" && !strings.HasPrefix(cache, "public, max-age=")) ||
-     (hash == "" && cache != "public, must-revalidate") {
+  if (hash != "" && !strings.HasPrefix(cache, "max-age=")) ||
+     (hash == "" && cache != "must-revalidate") {
     t.Errorf("wrong cache-control '%s'", cache)
   }
 

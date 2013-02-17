@@ -226,10 +226,10 @@ func serveHTTP(s Server, w http.ResponseWriter, r *http.Request) {
   headers := w.Header()
   if digest != "" {
     endoftime := time.Now().Add(31536000 * time.Second)
-    headers.Set("Cache-Control", "public, max-age=31536000")
+    headers.Set("Cache-Control", "max-age=31536000")
     headers.Set("Expires", endoftime.Format(http.TimeFormat))
   } else {
-    headers.Set("Cache-Control", "public, must-revalidate")
+    headers.Set("Cache-Control", "must-revalidate")
   }
   if etagMatches(w, r, asset) {
     return
@@ -239,11 +239,11 @@ func serveHTTP(s Server, w http.ResponseWriter, r *http.Request) {
 
 func etagMatches(w http.ResponseWriter, r *http.Request, a Asset) bool {
   tag := r.Header.Get("If-None-Match")
+  w.Header().Set("ETag", etag(a))
   if tag == etag(a) {
     w.WriteHeader(http.StatusNotModified)
     return true
   }
-  w.Header().Set("ETag", etag(a))
   return false
 }
 
