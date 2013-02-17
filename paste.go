@@ -292,9 +292,13 @@ func (s *fileServer) buildAsset(logical string) (Asset, error) {
   if err != nil {
     return nil, err
   }
+
+  /* If we have a processor, or possibly a compressor, or this is js/css which
+     could possibly have requires at the top, then we need a processed asset */
   _, ok1 := processors[path.Ext(pathname)]
   _, ok2 := compressors[path.Ext(logical)]
-  if ok1 || (ok2 && s.config.Compressed) {
+  if ok1 || (ok2 && s.config.Compressed) ||
+      path.Ext(logical) == ".js" || path.Ext(logical) == ".css" {
     return newProcessed(s, logical, pathname)
   }
   return newStatic(s, logical, pathname)
