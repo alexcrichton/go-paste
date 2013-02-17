@@ -222,9 +222,6 @@ func serveHTTP(s Server, w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  if etagMatches(w, r, asset) {
-    return
-  }
 
   headers := w.Header()
   if digest != "" {
@@ -233,6 +230,9 @@ func serveHTTP(s Server, w http.ResponseWriter, r *http.Request) {
     headers.Set("Expires", endoftime.Format(http.TimeFormat))
   } else {
     headers.Set("Cache-Control", "public, must-revalidate")
+  }
+  if etagMatches(w, r, asset) {
+    return
   }
   http.ServeFile(w, r, asset.Pathname())
 }
