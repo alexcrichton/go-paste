@@ -96,6 +96,22 @@ path of `foo.css`. The contents served up are also processed with sass.
 Note that if a deployment is similar to the section below, the requirement of
 `libsass` isn't needed in the production environment
 
+### Images
+
+This is available via the `github.com/alexcrichton/go-paste/images` package.
+When imported, images will be compressed so long as there's a corresponding
+compressor available for those images. This package tests for various commands
+to exist on the system, and if present the compressor is registered.
+
+Currently searched for commands are:
+
+* `optipng` - compressed PNG, GIF, BMP, and TIFF
+* `pngcrush` - compressed PNG
+* `jpegoptim` - compressed JPG, JPEG
+
+If these programs don't exist, then the respective compressor won't be
+registered. If they do exist, then the compressor will be registered, however.
+
 ## Deployment
 
 When deploying an application, you probably don't want to slow down startup of
