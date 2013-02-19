@@ -102,7 +102,9 @@ func newProcessed(s *fileServer, logical, path string) (Asset, error) {
     if err == nil {
       dst.Close()
       err = compressor.Process(compiled, dst.Name())
-      os.Rename(dst.Name(), compiled)
+      if err == nil {
+        os.Rename(dst.Name(), compiled)
+      }
     }
     if err != nil { return nil, err }
   }
