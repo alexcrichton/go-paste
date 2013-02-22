@@ -11,7 +11,6 @@ func init() {
 }
 
 func jpegoptim(infile, outfile string) error {
-  println(infile, outfile)
   err := cp(infile, outfile)
   if err != nil {
     return err
